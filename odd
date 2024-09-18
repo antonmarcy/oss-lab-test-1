@@ -1,0 +1,67 @@
+import numpy as np
+import scipy.signal as signal
+import matplotlib.pyplot as plt
+
+# Step 1: Generate AQI readings with noise
+np.random.seed(42)
+baseline_aqi = 75
+noise_level = 10
+aqi_readings = baseline_aqi + noise_level * np.random.randn(1440)
+
+# Step 2: Apply low-pass filter
+b, a = signal.butter(3, 0.05)
+smoothed_aqi = signal.filtfilt(b, a, aqi_readings)
+
+# Step 3: Compute hourly averages
+def compute_hourly_averages(smoothed_data):
+    hourly_data = smoothed_data.reshape(24, 60)
+    hourly_averages = np.mean(hourly_data, axis=1)
+    return hourly_averages
+
+hourly_averages = compute_hourly_averages(smoothed_aqi)
+
+# Step 4: Plot the data
+plt.figure(figsize=(10, 6))
+plt.plot(aqi_readings, label='Noisy AQI Data', color='gray', alpha=0.6)
+plt.plot(smoothed_aqi, label='Smoothed AQI Data', color='blue')
+hourly_times = np.arange(0, 1440, 60)
+plt.plot(hourly_times, hourly_averages, 'o-', label='Hourly Averages', color='green')
+plt.xlabel('Time (minutes)')
+plt.ylabel('AQI')
+plt.title('AQI Data Over 24 Hours')
+plt.legend()
+plt.show()
+
+# Step 5: Find intervals where AQI exceeds threshold for more than 15 minutes
+def find_exceeding_intervals(aqi_data, threshold=100, duration=15):
+    exceed_indices = np.where(aqi_data > threshold)[0]
+    exceeding_intervals = []
+    start_idx = None
+    for i in range(1, len(exceed_indices)):
+        if exceed_indices[i] == exceed_indices[i-1] + 1:
+            if start_idx is None:
+                start_idx = exceed_indices[i-1]
+        else:
+            if start_idx is not None and (exceed_indices[i-1] - start_idx + 1) >= duration:
+                exceeding_intervals.append((start_idx, exceed_indices[i-1]))
+            start_idx = None
+    if start_idx is not None and (exceed_indices[-1] - start_idx + 1) >= duration:
+        exceeding_intervals.append((start_idx, exceed_indices[-1]))
+    return exceeding_intervals
+
+exceeding_intervals = find_exceeding_intervals(smoothed_aqi, threshold=100, duration=15)
+
+# Plot with highlighted exceeding intervals
+plt.figure(figsize=(10, 6))
+plt.plot(aqi_readings, label='Noisy AQI Data', color='gray', alpha=0.6)
+plt.plot(smoothed_aqi, label='Smoothed AQI Data', color='blue')
+plt.plot(hourly_times, hourly_averages, 'o-', label='Hourly Averages', color='green')
+
+for (start, end) in exceeding_intervals:
+    plt.axvspan(start, end, color='red', alpha=0.3)
+
+plt.xlabel('Time (minutes)')
+plt.ylabel('AQI')
+plt.title('AQI Data Over 24 Hours with Exceeding Intervals')
+plt.legend()
+plt.show()
