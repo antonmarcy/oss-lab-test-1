@@ -2,17 +2,17 @@ import numpy as np
 import scipy.signal as signal
 import matplotlib.pyplot as plt
 
-# Step 1: Generate AQI readings with noise
+
 np.random.seed(42)
 baseline_aqi = 75
 noise_level = 10
 aqi_readings = baseline_aqi + noise_level * np.random.randn(1440)
 
-# Step 2: Apply low-pass filter
+
 b, a = signal.butter(3, 0.05)
 smoothed_aqi = signal.filtfilt(b, a, aqi_readings)
 
-# Step 3: Compute hourly averages
+
 def compute_hourly_averages(smoothed_data):
     hourly_data = smoothed_data.reshape(24, 60)
     hourly_averages = np.mean(hourly_data, axis=1)
@@ -20,7 +20,7 @@ def compute_hourly_averages(smoothed_data):
 
 hourly_averages = compute_hourly_averages(smoothed_aqi)
 
-# Step 4: Plot the data
+
 plt.figure(figsize=(10, 6))
 plt.plot(aqi_readings, label='Noisy AQI Data', color='gray', alpha=0.6)
 plt.plot(smoothed_aqi, label='Smoothed AQI Data', color='blue')
@@ -32,7 +32,7 @@ plt.title('AQI Data Over 24 Hours')
 plt.legend()
 plt.show()
 
-# Step 5: Find intervals where AQI exceeds threshold for more than 15 minutes
+
 def find_exceeding_intervals(aqi_data, threshold=100, duration=15):
     exceed_indices = np.where(aqi_data > threshold)[0]
     exceeding_intervals = []
@@ -51,7 +51,7 @@ def find_exceeding_intervals(aqi_data, threshold=100, duration=15):
 
 exceeding_intervals = find_exceeding_intervals(smoothed_aqi, threshold=100, duration=15)
 
-# Plot with highlighted exceeding intervals
+
 plt.figure(figsize=(10, 6))
 plt.plot(aqi_readings, label='Noisy AQI Data', color='gray', alpha=0.6)
 plt.plot(smoothed_aqi, label='Smoothed AQI Data', color='blue')
